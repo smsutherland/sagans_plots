@@ -1,0 +1,14 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ssut_plots"
+dynamic = ["version"]
+requires-python = ">=3.11"
+dependencies = [
+"h5py", "scipy", "Pylians", "tables", "matplotlib", "numpy", "astropy", "yt"
+]
+
+[tool.hatch.version]
+path = "ssut_plots/__init__.py"
