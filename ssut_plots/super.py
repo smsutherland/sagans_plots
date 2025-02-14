@@ -4,6 +4,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Container, List, Literal, Tuple, Union
 
+import astropy.units as u
 import camels_library as cl
 import h5py
 import matplotlib.pyplot as plt
@@ -14,7 +15,7 @@ from matplotlib.lines import Line2D
 
 from . import sfrd
 
-StrPath = Union[str, bytes, os.PathLike]
+StrPath = Union[str, os.PathLike]
 
 nbins = 20
 
@@ -67,8 +68,8 @@ def plot_halo_mass_function(ax: Axes, fof: StrPath, snap: StrPath, **kwargs):
         1e10,
         1e14,
         20,
-        fof,
-        snap,
+        str(fof),
+        str(snap),
     )
     assert hmf is not None, f"Error with `{snap}`"
     ax.plot(hmf[1], hmf[2], **kwargs)
@@ -184,7 +185,7 @@ def plot_BH_mass(ax: Axes, fof: StrPath, **kwargs):
     ax.plot(xs, means, **kwargs)
 
 
-def plot_v_circ(ax: Axes, fof: str, **kwargs):
+def plot_v_circ(ax: Axes, fof: StrPath, **kwargs):
     with h5py.File(fof) as f:
         velocity = f["Subhalo/SubhaloVmax"][:]  # km / s
         stellar_mass = f["Subhalo/SubhaloMassType"][:, 4] * 1e10  # Msun / h
@@ -233,12 +234,33 @@ def power_ratio(ax: Axes, snap: StrPath, **kwargs) -> Axes:
     return ax
 
 
+class Sim:
+    snapshot: Path
+    subfind: Path
+    sfr: Path
+    kind: Literal["SIMBA", "SWIFT", "ASTRID"]
+    box_size: float
+
+    def __init__(
+        self,
+        snapshot: StrPath,
+        subfind: StrPath,
+        sfr: StrPath,
+        kind: Literal["SIMBA", "SWIFT", "ASTRID"],
+        box_size: float = 25,
+    ):
+        self.snapshot = Path(snapshot)
+        self.subfind = Path(subfind)
+        self.sfr = Path(sfr)
+        self.kind = kind
+        self.box_size = box_size / 0.6711 * u.Mpc
+
+
 def mk_plot(
-    sims: List[Tuple[StrPath, StrPath, StrPath, dict[str, Any]]],
+    sims: List[Tuple[Sim, dict[str, Any]]],
     panels: Container[int] = range(1, 13),
     every_legend: bool = False,
     numbers: bool = True,
-    box_size: float = 25,
 ):
     fig = plt.figure(figsize=(20, 20))
 
@@ -255,8 +277,8 @@ def mk_plot(
             xlabel=r"$k \left[h \text{Mpc}^{-1}\right]$",
             ylabel=r"$P_m(k)\left[h^{-3}\text{Mpc}^3\right]$",
         )
-        for snap, _, _, kwargs in sims:
-            plot_matter_power_spectrum(ax, snap, **kwargs)
+        for sim, kwargs in sims:
+            plot_matter_power_spectrum(ax, sim.snapshot, **kwargs)
         if numbers:
             put_number(ax, "I", loc="lower")
 
@@ -273,8 +295,8 @@ def mk_plot(
             xlabel=r"$k \left[h \text{Mpc}^{-1}\right]$",
             ylabel=r"$P_g(k)\left[h^{-3}\text{Mpc}^3\right]$",
         )
-        for snap, _, _, kwargs in sims:
-            plot_gas_power_spectrum(ax, snap, **kwargs)
+        for sim, kwargs in sims:
+            plot_gas_power_spectrum(ax, sim.snapshot, **kwargs)
         if numbers:
             put_number(ax, "II", loc="lower")
 
@@ -290,8 +312,8 @@ def mk_plot(
             xlabel=r"$k \left[h \text{Mpc}^{-1}\right]$",
             ylabel="$P_{hydro}(k)/P_{Nbody}(k)$",
         )
-        for snap, _, _, kwargs in sims:
-            power_ratio(ax, snap, **kwargs)
+        for sim, kwargs in sims:
+            power_ratio(ax, sim.snapshot, **kwargs)
         if numbers:
             put_number(ax, "III", loc="lower")
 
@@ -306,8 +328,8 @@ def mk_plot(
             xlabel=r"$M_\text{halo} / \Omega_m \left[h^{-1} M_\odot\right]$",
             ylabel=r"HMF $[h^4 \text{Mpc}^{-3} M_\odot^{-1}]$",
         )
-        for snap, fof, _, kwargs in sims:
-            plot_halo_mass_function(ax, fof, snap, **kwargs)
+        for sim, kwargs in sims:
+            plot_halo_mass_function(ax, sim.subfind, sim.snapshot, **kwargs)
         if numbers:
             put_number(ax, "IV", loc="lower")
 
@@ -323,13 +345,11 @@ def mk_plot(
             xlabel="redshift (z)",
             ylabel=r"SFRD [$M_\odot yr^{-1} Mpc^{-3}$]",
         )
-        for _, _, base, kwargs in sims:
-            if "SWIMBA" in base:
-                sfrd_data = sfrd.read_info_swift(Path(base) / "SFR.txt", box_size)
-            elif "SIMBA" in base:
-                sfrd_data = sfrd.read_info_simba(
-                    Path(base) / "extra_files/sfr.txt", box_size
-                )
+        for sim, kwargs in sims:
+            if sim.kind == "SWIFT":
+                sfrd_data = sfrd.read_info_swift(sim.sfr, sim.box_size)
+            elif sim.kind == "SIMBA":
+                sfrd_data = sfrd.read_info_simba(sim.sfr, sim.box_size)
             else:
                 continue
             plot_SFRD(ax, sfrd_data, **kwargs)
@@ -347,8 +367,8 @@ def mk_plot(
             xlabel=r"$M_*$ [$h^{-1} M_\odot$]",
             ylabel=r"SMF [$h^4 Mpc^{-3} M_\odot^{-1}$]",
         )
-        for _, fof, _, kwargs in sims:
-            plot_mass_function(ax, fof, [4], **kwargs)
+        for sim, kwargs in sims:
+            plot_mass_function(ax, sim.subfind, [4], **kwargs)
         if numbers:
             put_number(ax, "VI", loc="lower")
 
@@ -362,8 +382,8 @@ def mk_plot(
             xlabel=r"$M_\text{halo} / \Omega_m \left[h^{-1} M_\odot\right]$",
             ylabel=r"$M_b / M_{halo} / (\Omega_b/\Omega_m)$",
         )
-        for _, fof, _, kwargs in sims:
-            plot_baryon_fraction(ax, fof, 5, **kwargs)
+        for sim, kwargs in sims:
+            plot_baryon_fraction(ax, sim.subfind, 5, **kwargs)
         if numbers:
             put_number(ax, "VII", loc="upper")
 
@@ -378,8 +398,8 @@ def mk_plot(
             xlabel=r"Temperature [K]",
             ylabel=r"PDF [$K^{-1}$]",
         )
-        for snap, _, _, kwargs in sims:
-            plot_halo_temp(ax, snap, **kwargs)
+        for sim, kwargs in sims:
+            plot_halo_temp(ax, sim.snapshot, **kwargs)
         if numbers:
             put_number(ax, "VIII", loc="upper")
 
@@ -394,8 +414,8 @@ def mk_plot(
             xlabel=r"$M_*$ [$h^{-1} M_\odot$]",
             ylabel=r"R$_{1/2}$ [$h^{-1} kpc$]",
         )
-        for _, fof, _, kwargs in sims:
-            plot_galaxy_radius(ax, fof, **kwargs)
+        for sim, kwargs in sims:
+            plot_galaxy_radius(ax, sim.subfind, **kwargs)
         if numbers:
             put_number(ax, "IX", loc="upper")
 
@@ -410,8 +430,8 @@ def mk_plot(
             xlabel=r"$M_*$ [$h^{-1} M_\odot$]",
             ylabel=r"M$_{BH}$ [$h^{-1} M_\odot$]",
         )
-        for _, fof, _, kwargs in sims:
-            plot_BH_mass(ax, fof, **kwargs)
+        for sim, kwargs in sims:
+            plot_BH_mass(ax, sim.subfind, **kwargs)
         if numbers:
             put_number(ax, "X", loc="upper")
 
@@ -425,8 +445,8 @@ def mk_plot(
             xlabel=r"$M_*$ [$h^{-1} M_\odot$]",
             ylabel=r"max($\sqrt{GM/R}$) [km/s]",
         )
-        for _, fof, _, kwargs in sims:
-            plot_v_circ(ax, fof, **kwargs)
+        for sim, kwargs in sims:
+            plot_v_circ(ax, sim.subfind, **kwargs)
         if numbers:
             put_number(ax, "XI", loc="upper")
 
@@ -441,13 +461,13 @@ def mk_plot(
             xlabel=r"$M_*$ [$h^{-1} M_\odot$]",
             ylabel=r"SFR [$M_\odot yr^{-1}$]",
         )
-        for _, fof, _, kwargs in sims:
-            plot_gal_sfr(ax, fof, **kwargs)
+        for sim, kwargs in sims:
+            plot_gal_sfr(ax, sim.subfind, **kwargs)
         if numbers:
             put_number(ax, "XII", loc="upper")
 
-    handles = [Line2D([0], [0], **kwargs) for _, _, _, kwargs in sims]
-    labels = [kwargs["label"] for _, _, _, kwargs in sims]
+    handles = [Line2D([0], [0], **kwargs) for _, kwargs in sims]
+    labels = [kwargs["label"] for _, kwargs in sims]
     if every_legend:
         for ax in fig.axes:
             ax.legend(handles, labels)
