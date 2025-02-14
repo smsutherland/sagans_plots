@@ -12,7 +12,7 @@ from astropy.table import QTable
 from matplotlib.axes import Axes
 
 
-def read_info_swift(path: Path):
+def read_info_swift(path: Path, box_size):
     sfr = QTable.read(
         path,
         format="ascii.basic",
@@ -47,7 +47,6 @@ def read_info_swift(path: Path):
     name = params["MetaData"]["run_name"]
 
     # TODO: read in the box size from somewhere. It's not in the parameter file
-    box_size = 25.0 * u.Mpc / h
     volume = box_size**3
     sfr["SFR density"] = sfr["SFR (total)"] / volume
     sfr["SFR density"] = sfr["SFR density"].to(u.Msun / u.yr / u.Mpc**3)
@@ -61,12 +60,28 @@ def read_info_swift(path: Path):
     return sfr
 
 
-def read_info_simba(path: Path):
+def read_info_simba(path: Path, box_size):
     scale, sfr = np.loadtxt(path, usecols=(0, 2), unpack=True)
     sfr = sfr << u.Msun / u.yr
     h = 0.6711
     z = 1.0 / scale - 1.0
-    box_size = 25.0 * u.Mpc / h
+    volume = box_size**3
+    sfr_density = sfr / volume
+
+    tab = QTable()
+    tab["a"] = scale
+    tab["z"] = z
+    tab["SFR"] = sfr
+    tab["SFR density"] = sfr_density.to(u.Msun / u.yr / u.Mpc**3)
+    tab.meta["h"] = h
+    return tab
+
+
+def read_info_astrid(path: Path, box_size):
+    scale, sfr = np.loadtxt(path, usecols=(0, 2), unpack=True)
+    sfr = sfr << u.Msun / u.yr
+    h = 0.6711
+    z = 1.0 / scale - 1.0
     volume = box_size**3
     sfr_density = sfr / volume
 
@@ -108,7 +123,7 @@ def smooth(data, z_min, z_max, n=10_000):
 def plot_sfrd(
     ax: Axes,
     file: str,
-    kind: Literal["SWIFT", "SIMBA", "auto"] = "auto",
+    kind: Literal["SWIFT", "SIMBA", "ASTRID", "auto"] = "auto",
     xscale: Literal["redshift", "time"] = "redshift",
     time: Literal["forward", "lookback"] = "forward",
     reversed: bool = False,
@@ -117,8 +132,10 @@ def plot_sfrd(
     zrange=(0, 10),
     top_ticks=None,
     mk_twin=True,
+    box_size: float = 25,
     **kwargs,
 ):
+    box_size = box_size / 0.6711 * u.Mpc
     if mk_twin and cosmo is None:
         raise ValueError("mk_twin was set, but cosmo was None")
     if xscale == "time" and cosmo is None:
@@ -134,9 +151,11 @@ def plot_sfrd(
         else:
             raise ValueError(f"Could not identify simulation type for {file}")
     if kind == "SWIFT":
-        sfrd = read_info_swift(path)
+        sfrd = read_info_swift(path, box_size)
     elif kind == "SIMBA":
-        sfrd = read_info_simba(path)
+        sfrd = read_info_simba(path, box_size)
+    elif kind == "ASTRID":
+        sfrd = read_info_astrid(path, box_size)
     else:
         raise ValueError(f"Unknown kind: `{kind}`")
 

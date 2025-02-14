@@ -210,26 +210,6 @@ def plot_gal_sfr(ax: Axes, fof: StrPath, **kwargs):
     ax.plot(xs, means, **kwargs)
 
 
-def sfr_snap(snap: StrPath, fix_unit: bool = False):
-    with h5py.File(snap) as f:
-        sfr = f["PartType0/StarFormationRate"][:]  # Msun / yr
-        box_size = f["Header"].attrs["BoxSize"]  # kpc / h
-        h = f["Header"].attrs["HubbleParam"]
-        z = f["Header"].attrs["Redshift"]
-        if isinstance(box_size, np.ndarray):
-            box_size = box_size[0]
-        if isinstance(h, np.ndarray):
-            h = h[0]
-        if isinstance(z, np.ndarray):
-            z = z[0]
-        if fix_unit:
-            sfr *= 10.227
-
-    tot_sfr = np.sum(sfr)
-    sfr_density = tot_sfr / (box_size / h / 1000) ** 3  # Msun / yr / Mpc
-    return sfr_density, z
-
-
 def power_ratio(ax: Axes, snap: StrPath, **kwargs) -> Axes:
     p_hydro = pK_cache(snap, 512, "CIC", 40, range(6))
     assert not isinstance(p_hydro, int), f"Error with {snap}"
@@ -258,6 +238,7 @@ def mk_plot(
     panels: Container[int] = range(1, 13),
     every_legend: bool = False,
     numbers: bool = True,
+    box_size: float = 25,
 ):
     fig = plt.figure(figsize=(20, 20))
 
@@ -344,9 +325,11 @@ def mk_plot(
         )
         for _, _, base, kwargs in sims:
             if "SWIMBA" in base:
-                sfrd_data = sfrd.read_info_swift(Path(base) / "SFR.txt")
+                sfrd_data = sfrd.read_info_swift(Path(base) / "SFR.txt", box_size)
             elif "SIMBA" in base:
-                sfrd_data = sfrd.read_info_simba(Path(base) / "extra_files/sfr.txt")
+                sfrd_data = sfrd.read_info_simba(
+                    Path(base) / "extra_files/sfr.txt", box_size
+                )
             else:
                 continue
             plot_SFRD(ax, sfrd_data, **kwargs)
