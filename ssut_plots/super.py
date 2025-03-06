@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Container, List, Literal, Tuple, Union
 
 import astropy.units as u
-import camels_library as cl
+from . import camels_library as cl
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
