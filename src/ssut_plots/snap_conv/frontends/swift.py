@@ -1,8 +1,6 @@
 import h5py
-import numpy as np
 import unyt as u
 
-from snap_conv.util import git_version
 
 from .hdf5 import Hdf5Frontend
 from .header import Header
@@ -45,55 +43,6 @@ class SwiftFrontend(Hdf5Frontend):
                 return None
             return factor * unit
 
-    @classmethod
-    def _get_output_unit(cls, group, key):
-        units = dict(
-            mass=1e10 * u.Msun,
-            length=u.Mpc,
-            velocity=u.km / u.s,
-        )
-        units["time"] = units["length"] / units["velocity"]
-
-        gas_units = dict(
-            Coordinates=units["length"],
-            StarFormationRate=u.Msun / u.yr,
-            Masses=units["mass"],
-            InternalEnergy=units["velocity"] ** 2,
-            Density=units["mass"] / units["length"] ** 3,
-            Velocities=units["velocity"],
-            SmoothingLength=units["length"],
-        )
-        dm_units = dict(
-            Coordinates=units["length"],
-            Masses=units["mass"],
-            Velocities=units["velocity"],
-        )
-        star_units = dict(
-            Coordinates=units["length"],
-            Masses=units["mass"],
-            Velocities=units["velocity"],
-            SmoothingLength=units["length"],
-            InitialMass=units["mass"],
-        )
-        bh_units = dict(
-            Coordinates=units["length"],
-            Masses=units["mass"],
-            Velocities=units["velocity"],
-            SmoothingLength=units["length"],
-            Mdot=units["mass"] / units["time"],
-        )
-        field_units = dict(
-            PartType0=gas_units,
-            PartType1=dm_units,
-            PartType4=star_units,
-            PartType5=bh_units,
-        )
-
-        if group in field_units:
-            if key in field_units[group]:
-                return field_units[group][key]
-        return None
-
     def load_header(self):
         with h5py.File(self.fname) as f:
             header = f["Header"].attrs
@@ -102,7 +51,6 @@ class SwiftFrontend(Hdf5Frontend):
             redshift = header["Redshift"][0]
             scale = header["Scale-factor"][0]
             h = cosmo["H0 [internal units]"][0] / 100
-            H = cosmo["H0 [internal units]"][0] * u.km / u.s / u.Mpc
             box_size = header["BoxSize"] * u.Mpc
             num_part = header["NumPart_Total"]
             Omega_cdm = cosmo["Omega_cdm"]
@@ -114,7 +62,6 @@ class SwiftFrontend(Hdf5Frontend):
                 redshift=redshift,
                 scale=scale,
                 h=h,
-                H=H,
                 box_size=box_size,
                 num_part=num_part,
                 Omega_cdm=Omega_cdm,

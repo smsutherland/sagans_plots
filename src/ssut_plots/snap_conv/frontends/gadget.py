@@ -61,13 +61,6 @@ class GadgetFrontend(Hdf5Frontend):
                 return self.field_units[group][key]
         return None
 
-    @classmethod
-    def _get_output_unit(cls, group, key):
-        if group in cls.field_units:
-            if key in cls.field_units[group]:
-                return cls.field_units[group][key]
-        return None
-
     def load_header(self):
         with h5py.File(self.fname) as f:
             header = f["Header"].attrs
@@ -75,7 +68,6 @@ class GadgetFrontend(Hdf5Frontend):
             redshift = header["Redshift"]
             scale = header["Time"]
             h = header["HubbleParam"]
-            H = h * 100 * u.km / u.s / u.Mpc
             box_size = np.ones(3) * header["BoxSize"] * u.Mpc / h
             num_part = header["NumPart_Total"]
             Omega_b = 0.049  # TODO: Don't hard code this
@@ -87,7 +79,6 @@ class GadgetFrontend(Hdf5Frontend):
                 redshift=redshift,
                 scale=scale,
                 h=h,
-                H=H,
                 box_size=box_size,
                 num_part=num_part,
                 Omega_cdm=Omega_cdm,

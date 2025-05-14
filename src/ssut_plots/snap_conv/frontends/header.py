@@ -9,10 +9,13 @@ class Header:
     scale: float
     redshift: float
     h: float
-    H: u.unyt_quantity
     box_size: u.unyt_array
     num_part: np.ndarray
     Omega_cdm: float
     Omega_b: float
     Omega_m: float
     Omega_Lambda: float
+
+    @property
+    def H(self) -> u.unyt_quantity:
+        return self.h * 100 * u.km / u.s / u.Mpc
