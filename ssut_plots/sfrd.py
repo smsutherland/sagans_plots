@@ -1,5 +1,3 @@
-#!/bin/env python
-
 from pathlib import Path
 from typing import Literal, Optional
 
@@ -12,7 +10,7 @@ from astropy.table import QTable
 from matplotlib.axes import Axes
 
 
-def read_info_swift(path: Path, box_size):
+def read_info_swift(path: Path, box_size, params=None):
     sfr = QTable.read(
         path,
         format="ascii.basic",
@@ -37,7 +35,7 @@ def read_info_swift(path: Path, box_size):
             1.02269e-2 * u.Msun / u.yr,
         ],
     )
-    with open(path.parent / "params.yml", "r") as f:
+    with open(params or path.parent / "params.yml", "r") as f:
         params = yaml.safe_load(f)
     h = params["Cosmology"]["h"]
     O_cdm = params["Cosmology"]["Omega_cdm"]
@@ -133,6 +131,7 @@ def plot_sfrd(
     top_ticks=None,
     mk_twin=True,
     box_size: float = 25,
+    param: Optional[str] = None,
     **kwargs,
 ):
     box_size = box_size / 0.6711 * u.Mpc
@@ -151,7 +150,7 @@ def plot_sfrd(
         else:
             raise ValueError(f"Could not identify simulation type for {file}")
     if kind == "SWIFT":
-        sfrd = read_info_swift(path, box_size)
+        sfrd = read_info_swift(path, box_size, param)
     elif kind == "SIMBA":
         sfrd = read_info_simba(path, box_size)
     elif kind == "ASTRID":
@@ -176,7 +175,9 @@ def plot_sfrd(
         ax.set_xlim(tmin, tmax)
 
     ax.set_yscale("log")
-    ax.set_ylabel("Star formation rate density [$M_\\odot/yr/cMpc$]")
+    ax.set_ylabel(
+        r"Star formation rate density $\left[\mathrm{M_\odot\,yr^{-1}\,cMpc^{-1}}\right]$"
+    )
     if xscale == "redshift":
         bins, smoothed = smooth(sfrd, zrange[0], zrange[1], nbins)
         ax.plot(bins, smoothed, **kwargs)

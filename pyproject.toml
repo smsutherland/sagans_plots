@@ -7,7 +7,7 @@ name = "ssut_plots"
 dynamic = ["version"]
 requires-python = ">=3.11"
 dependencies = [
-"h5py", "scipy", "Pylians", "tables", "matplotlib", "numpy", "astropy", "yt"
+"h5py", "scipy", "Pylians", "tables", "matplotlib", "numpy", "astropy", "yt", "swiftsimio"
 ]
 
 [tool.hatch.version]

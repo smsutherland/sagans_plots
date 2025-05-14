@@ -157,9 +157,10 @@ def plot_halo_temp(ax: Axes, snap: StrPath, **kwargs) -> Axes:
     m = f["PartType0/Masses"][:] * 1e10  # Msun / h
     # p = m / v  # Msun h^2 / kpc^3
     bins = np.geomspace(1e2, 5e7, nbins + 1)
-    hist, edges = np.histogram(T, bins, weights=m, density=True)
-    xs = (edges[1:] + edges[:-1]) / 2
-    ax.plot(xs, hist, **kwargs)
+    ax.hist(T, bins, histtype="step", density=True, weights=m, **kwargs)
+    # hist, edges = np.histogram(T, bins, weights=m, density=True)
+    # xs = (edges[1:] + edges[:-1]) / 2
+    # ax.plot(xs, hist, **kwargs)
     return ax
 
 
@@ -274,8 +275,8 @@ def mk_plot(
             yscale="log",
             xlim=(0.3, 35),
             ylim=(1e-1, 1e3),
-            xlabel=r"$k \left[h \text{Mpc}^{-1}\right]$",
-            ylabel=r"$P_m(k)\left[h^{-3}\text{Mpc}^3\right]$",
+            xlabel=r"k $\left[\mathrm{h\,Mpc^{-1}}\right]$",
+            ylabel=r"$\mathrm{P_m(k)}\,\left[\mathrm{h^{-3}\,Mpc^3}\right]$",
         )
         for sim, kwargs in sims:
             plot_matter_power_spectrum(ax, sim.snapshot, **kwargs)
@@ -292,8 +293,8 @@ def mk_plot(
             yscale="log",
             xlim=(0.3, 35),
             ylim=(1e-2, 1e3),
-            xlabel=r"$k \left[h \text{Mpc}^{-1}\right]$",
-            ylabel=r"$P_g(k)\left[h^{-3}\text{Mpc}^3\right]$",
+            xlabel=r"k $\left[\mathrm{h\,Mpc^{-1}}\right]$",
+            ylabel=r"$\mathrm{P_g(k)}\,\left[\mathrm{h^{-3}\,Mpc^3}\right]$",
         )
         for sim, kwargs in sims:
             plot_gas_power_spectrum(ax, sim.snapshot, **kwargs)
@@ -309,8 +310,8 @@ def mk_plot(
             xlim=(0.3, 35),
             # ylim=(0.5, 1.05),
             xscale="log",
-            xlabel=r"$k \left[h \text{Mpc}^{-1}\right]$",
-            ylabel="$P_{hydro}(k)/P_{Nbody}(k)$",
+            xlabel=r"k $\left[\mathrm{h\,Mpc^{-1}}\right]$",
+            ylabel=r"$\mathrm{P_{hydro}(k)/P_{Nbody}}(k)$",
         )
         for sim, kwargs in sims:
             power_ratio(ax, sim.snapshot, **kwargs)
@@ -325,8 +326,8 @@ def mk_plot(
             4,
             yscale="log",
             xscale="log",
-            xlabel=r"$M_\text{halo} / \Omega_m \left[h^{-1} M_\odot\right]$",
-            ylabel=r"HMF $[h^4 \text{Mpc}^{-3} M_\odot^{-1}]$",
+            xlabel=r"$\mathrm{M_{halo}} / \Omega_\mathrm{m} \left[\mathrm{h^{-1}\,M_\odot}\right]$",
+            ylabel=r"HMF $\left[\mathrm{h^4\,Mpc^{-3}\,M_\odot^{-1}}\right]$",
         )
         for sim, kwargs in sims:
             plot_halo_mass_function(ax, sim.subfind, sim.snapshot, **kwargs)
@@ -343,7 +344,7 @@ def mk_plot(
             ylim=(5e-4, 2e-1),
             yscale="log",
             xlabel="redshift (z)",
-            ylabel=r"SFRD [$M_\odot yr^{-1} Mpc^{-3}$]",
+            ylabel=r"SFRD $\left[\mathrm{M_\odot\,yr^{-1}\,cMpc^{-3}}\right]$",
         )
         for sim, kwargs in sims:
             if sim.kind == "SWIFT":
@@ -364,8 +365,8 @@ def mk_plot(
             6,
             xscale="log",
             yscale="log",
-            xlabel=r"$M_*$ [$h^{-1} M_\odot$]",
-            ylabel=r"SMF [$h^4 Mpc^{-3} M_\odot^{-1}$]",
+            xlabel=r"$\mathrm{M}_*$ $\left[\mathrm{h^{-1}\,M_\odot}\right]$",
+            ylabel=r"SMF $\left[\mathrm{h^4\,Mpc^{-3}\,M_\odot^{-1}}\right]$",
         )
         for sim, kwargs in sims:
             plot_mass_function(ax, sim.subfind, [4], **kwargs)
@@ -379,8 +380,8 @@ def mk_plot(
             3,
             7,
             xscale="log",
-            xlabel=r"$M_\text{halo} / \Omega_m \left[h^{-1} M_\odot\right]$",
-            ylabel=r"$M_b / M_{halo} / (\Omega_b/\Omega_m)$",
+            xlabel=r"$\mathrm{M_{halo}} / \Omega_\mathrm{m} \left[\mathrm{h^{-1}\,M_\odot}\right]$",
+            ylabel=r"$\mathrm{M_b / M_{halo} / (\Omega_b/\Omega_m)}$",
         )
         for sim, kwargs in sims:
             plot_baryon_fraction(ax, sim.subfind, 5, **kwargs)
@@ -396,7 +397,7 @@ def mk_plot(
             xscale="log",
             yscale="log",
             xlabel=r"Temperature [K]",
-            ylabel=r"PDF [$K^{-1}$]",
+            ylabel=r"PDF $\left[\mathrm{K}^{-1}\right]$",
         )
         for sim, kwargs in sims:
             plot_halo_temp(ax, sim.snapshot, **kwargs)
@@ -411,8 +412,8 @@ def mk_plot(
             9,
             xscale="log",
             yscale="log",
-            xlabel=r"$M_*$ [$h^{-1} M_\odot$]",
-            ylabel=r"R$_{1/2}$ [$h^{-1} kpc$]",
+            xlabel=r"$\mathrm{M}_*$ $\left[\mathrm{h^{-1}\,M_\odot}\right]$",
+            ylabel=r"$\mathrm{R}_{1/2}$ $\left[\mathrm{h^{-1}\,kpc}\right]$",
         )
         for sim, kwargs in sims:
             plot_galaxy_radius(ax, sim.subfind, **kwargs)
@@ -427,8 +428,8 @@ def mk_plot(
             10,
             xscale="log",
             yscale="log",
-            xlabel=r"$M_*$ [$h^{-1} M_\odot$]",
-            ylabel=r"M$_{BH}$ [$h^{-1} M_\odot$]",
+            xlabel=r"$\mathrm{M}_*$ $\left[\mathrm{h^{-1}\,M_\odot}\right]$",
+            ylabel=r"$\mathrm{M_{BH}}$ $\left[\mathrm{h^{-1}\,M_\odot}\right]$",
         )
         for sim, kwargs in sims:
             plot_BH_mass(ax, sim.subfind, **kwargs)
@@ -442,8 +443,8 @@ def mk_plot(
             3,
             11,
             xscale="log",
-            xlabel=r"$M_*$ [$h^{-1} M_\odot$]",
-            ylabel=r"max($\sqrt{GM/R}$) [km/s]",
+            xlabel=r"$\mathrm{M}_*$ $\left[\mathrm{h^{-1}\,M_\odot}\right]$",
+            ylabel=r"max($\sqrt{\mathrm{GM/R}}$) $\left[\mathrm{km\,s^{-1}}\right]$",
         )
         for sim, kwargs in sims:
             plot_v_circ(ax, sim.subfind, **kwargs)
@@ -458,8 +459,8 @@ def mk_plot(
             12,
             xscale="log",
             yscale="log",
-            xlabel=r"$M_*$ [$h^{-1} M_\odot$]",
-            ylabel=r"SFR [$M_\odot yr^{-1}$]",
+            xlabel=r"$\mathrm{M}_*$ $\left[\mathrm{h^{-1}\,M_\odot}\right]$",
+            ylabel=r"SFR $\left[\mathrm{M_\odot\,yr^{-1}}\right]$",
         )
         for sim, kwargs in sims:
             plot_gal_sfr(ax, sim.subfind, **kwargs)
