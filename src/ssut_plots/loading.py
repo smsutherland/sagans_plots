@@ -75,7 +75,8 @@ def load_camels(
             allowed_numbers = range(0, 91)
             hint = "SWIFT"
     if number not in allowed_numbers:
-        raise ValueError(f"Snapshot {number} does not exist for Simulation {simulation}\nExisting snapshots: {allowed_numbers}")
+        raise ValueError(
+            f"Snapshot {number} does not exist for Simulation {simulation}\nExisting snapshots: {allowed_numbers}"
+        )
     path /= f"snapshot_{number:03}.hdf5"
-    return yt.load(path, hint=hint)
-
+    return yt.load(path, hint=hint)  # type: ignore yt.load DOES exist please trust me
