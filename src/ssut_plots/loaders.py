@@ -2,21 +2,23 @@ import typing as T
 from pathlib import Path
 
 import yt
-import yt.data_objects.static_output
 
+from .snapshot import Snapshot
 from .types import (
-    CamelsSimulationType,
-    SimulationType,
-    Volume,
-    OneP,
     CV,
     LH,
+    CamelsSimulationType,
+    OneP,
+    SimulationType,
+    Volume,
 )
 
 
 def load_snapshot(
-    fname: str | Path, kind: T.Optional[SimulationType]
-) -> yt.data_objects.static_output.Dataset:
+    fname: str | Path,
+    kind: T.Optional[SimulationType],
+    subfind: T.Optional[str | Path] = None,
+) -> Snapshot:
     match kind:
         case None:
             hint = None
@@ -25,7 +27,13 @@ def load_snapshot(
         case "SWIMBA":
             hint = "SWIFT"
 
-    return yt.load(fname, hint=hint)  # type: ignore yt.load DOES exist please trust me
+    snap = yt.load(fname, hint=hint)  # type: ignore yt.load DOES exist please trust me
+    if subfind is not None:
+        fof = yt.load(subfind, hint="GadgetFOF")  # type: ignore yt.load DOES exist please trust me
+    else:
+        fof = None
+
+    return Snapshot(snap, fof)
 
 
 def load_series(
@@ -41,6 +49,7 @@ def load_camels(
     run: OneP | CV | LH,
     number: int,
     volume: Volume = 25,
+    subfind: bool = False,
 ):
     path = Path("/mnt/ceph/users/camels/PUBLIC_RELEASE/Sims")
     path /= simulation
@@ -79,4 +88,10 @@ def load_camels(
             f"Snapshot {number} does not exist for Simulation {simulation}\nExisting snapshots: {allowed_numbers}"
         )
     path /= f"snapshot_{number:03}.hdf5"
-    return yt.load(path, hint=hint)  # type: ignore yt.load DOES exist please trust me
+
+    snap = yt.load(path, hint=hint)  # type: ignore yt.load DOES exist please trust me
+    if subfind:
+        fof = yt.load(path.parent / f"groups_{number:03}.hdf5", hint="GadgetFOF")  # type: ignore yt.load DOES exist please trust me
+    else:
+        fof = None
+    return Snapshot(snap, fof)
