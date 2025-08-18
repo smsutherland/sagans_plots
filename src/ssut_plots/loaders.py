@@ -18,8 +18,8 @@ from .types import (
 
 def load_snapshot(
     fname: str | Path,
-    kind: T.Optional[SimulationType],
     subfind: T.Optional[str | Path] = None,
+    kind: T.Optional[SimulationType] = None,
 ) -> Snapshot:
     match kind:
         case None:
