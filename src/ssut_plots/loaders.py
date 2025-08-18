@@ -1,9 +1,11 @@
 import typing as T
+from glob import glob
 from pathlib import Path
 
 import yt
 
 from .snapshot import Snapshot
+from .timeseries import Timeseries
 from .types import (
     CV,
     LH,
@@ -36,12 +38,27 @@ def load_snapshot(
     return Snapshot(snap, fof)
 
 
+@T.overload
 def load_series(
-    *snapshots,
-    redshifts: T.Optional[T.List[float]] = None,
-    snapshot_nums: T.Optional[T.List[int]] = None,
-):
-    raise RuntimeError("TODO: load series of snapshots")
+    *snapshots: str | Path,
+    expand_glob: T.Literal[False],
+    kind: T.Optional[SimulationType] = None,
+) -> Timeseries: ...
+@T.overload
+def load_series(
+    snapshot: str,
+    /,
+    *,
+    expand_glob: T.Literal[True],
+    kind: T.Optional[SimulationType] = None,
+) -> Timeseries: ...
+def load_series(*snapshots, expand_glob, kind=None) -> Timeseries:
+    if expand_glob:
+        assert isinstance(snapshots[0], str)
+        snapshot_list = glob(snapshots[0])
+    else:
+        snapshot_list = list(snapshots)
+    return Timeseries(*(load_snapshot(fname, kind) for fname in snapshot_list))
 
 
 def load_camels(
