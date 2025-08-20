@@ -4,6 +4,8 @@ from pathlib import Path
 
 import yt
 
+from ssut_plots.sfr import SFRData
+
 from .snapshot import Snapshot
 from .timeseries import Timeseries
 from .types import (
@@ -14,6 +16,7 @@ from .types import (
     SimulationType,
     Volume,
 )
+from .run import Run
 
 
 def load_snapshot(
@@ -61,13 +64,11 @@ def load_series(*snapshots, expand_glob, kind=None) -> Timeseries:
     return Timeseries(*(load_snapshot(fname, kind) for fname in snapshot_list))
 
 
-def load_camels(
+def _camels_path(
     simulation: CamelsSimulationType,
     run: OneP | CV | LH,
-    number: int,
-    volume: Volume = 25,
-    subfind: bool = False,
-):
+    volume: Volume,
+) -> Path:
     path = Path("/mnt/ceph/users/camels/PUBLIC_RELEASE/Sims")
     path /= simulation
     match volume:
@@ -83,7 +84,17 @@ def load_camels(
             path = path / "CV" / str(run)
         case LH():
             path = path / "LH" / str(run)
+    return path
 
+
+def load_camels(
+    simulation: CamelsSimulationType,
+    run: OneP | CV | LH,
+    number: int,
+    volume: Volume = 25,
+    subfind: bool = False,
+):
+    path = _camels_path(simulation, run, volume)
     match simulation:
         case "SIMBA" | "IllustrisTNG":
             # fmt:off
@@ -112,3 +123,68 @@ def load_camels(
     else:
         fof = None
     return Snapshot(snap, fof)
+
+
+def load_camels_run(
+    simulation: CamelsSimulationType,
+    run: OneP | CV | LH,
+    volume: Volume = 25,
+    subfind: bool = False,
+) -> Run:
+    path = _camels_path(simulation, run, volume)
+    snapshots = sorted(glob(f"{path}/snapshot_*.hdf5"))
+    if subfind:
+        numbers = [snap[-8:-5] for snap in snapshots]
+        subfinds = [f"{path}/fof_subhalo_tab_{num}.hdf5" for num in numbers]
+    else:
+        subfinds = [None] * len(snapshots)
+
+    match simulation:
+        case "SIMBA" | "IllustrisTNG" | "Astrid":
+            hint = "Gizmo"
+        case "Swift-EAGLE":
+            hint = "SWIFT"
+
+    snaps = [
+        Snapshot(
+            yt.load(snapshot, hint=hint),  # type: ignore yt.load DOES exist please trust me
+            yt.load(fof, hint="GadgetFOF"),  # type: ignore yt.load DOES exist please trust me
+        )
+        for snapshot, fof in zip(snapshots, subfinds)
+    ]
+    timeseries = Timeseries(snaps)
+
+    match simulation:
+        case "SIMBA":
+            sfr = SFRData(path / "extra_files" / "sfr.txt", hint="SIMBA")
+        case "Swift-EAGLE":
+            sfr = SFRData(path / "extra_files" / "SFR.txt", hint="SWIFT")
+        case _:
+            sfr = None
+
+    return Run(timeseries, sfr)
+
+
+def load_swimba_run(path: str | Path, subfind: bool = False) -> Run:
+    path = Path(path)
+    snapshots = sorted(glob(f"{path}/snaps/snapshot_*.hdf5"))
+    subfind_catalogs = [None] * len(snapshots)
+    if subfind:
+        subfinds = glob(f"{path}/snaps/subs/fof_subhalo_tab_*.hdf5")
+        snap_numbers = [snap[-8:-5] for snap in snapshots]
+        subfind_numbers = [fof[-8:-5] for fof in subfinds]
+        for i, num in enumerate(subfind_numbers):
+            try:
+                index = snap_numbers.index(num)
+            except ValueError:
+                continue
+            catalog = yt.load(subfinds[i], hint="GadgetFOF")  # type: ignore yt.load DOES exist please trust me
+            subfind_catalogs[index] = catalog
+    timeseries = Timeseries(
+        Snapshot(
+            yt.load(snap, hint="SWIFT"),  # type: ignore yt.load DOES exist please trust me
+            fof,
+        )
+        for snap, fof in zip(snapshots, subfind_catalogs)
+    )
+    return Run(timeseries, SFRData(path / "SFR.txt", hint="SWIFT"))
