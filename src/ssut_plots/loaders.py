@@ -26,7 +26,7 @@ def load_snapshot(
             hint = None
         case "SIMBA":
             hint = "Gizmo"
-        case "SWIMBA":
+        case "SWIFT":
             hint = "SWIFT"
 
     snap = yt.load(fname, hint=hint)  # type: ignore yt.load DOES exist please trust me

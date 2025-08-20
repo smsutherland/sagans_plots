@@ -1,6 +1,6 @@
 import typing as T
 
-SimulationType = T.Literal["SIMBA", "SWIMBA"]
+SimulationType = T.Literal["SIMBA", "SWIFT"]
 
 CamelsSimulationType = T.Literal["SIMBA", "Swift-EAGLE", "IllustrisTNG", "Astrid"]
 CamelsSet = T.Literal["CV", "1P", "LH"]
