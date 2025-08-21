@@ -11,7 +11,9 @@ class Run:
     sfr_data: T.Optional[SFRData]
     cosmology: Cosmology
 
-    def __init__(self, timeseries: Timeseries, sfr_data: T.Optional[SFRData] = None) -> None:
+    def __init__(
+        self, timeseries: Timeseries, sfr_data: T.Optional[SFRData] = None
+    ) -> None:
         self.snapshots = timeseries
         self.sfr_data = sfr_data
         self.cosmology = timeseries.cosmology
