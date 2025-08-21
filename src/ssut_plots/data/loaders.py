@@ -4,11 +4,7 @@ from pathlib import Path
 
 import yt
 
-from ssut_plots.sfr import SFRData
-
-from .snapshot import Snapshot
-from .timeseries import Timeseries
-from .types import (
+from ssut_plots.types import (
     CV,
     LH,
     CamelsSimulationType,
@@ -16,7 +12,11 @@ from .types import (
     SimulationType,
     Volume,
 )
+
 from .run import Run
+from .sfr import SFRData
+from .snapshot import Snapshot
+from .timeseries import Timeseries
 
 
 def load_snapshot(

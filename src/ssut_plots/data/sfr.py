@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import unyt as u
 
-from .types import SimulationType
+from ssut_plots.types import SimulationType
 
 
 class SFRData:
