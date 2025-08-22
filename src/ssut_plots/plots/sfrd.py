@@ -21,7 +21,7 @@ class SfrPlot(Cosmo):
     def plot_sfrd(self, run: Run, resolution: int = 500):
         if run.sfr_data is None:
             raise ValueError("Run has no sfr data")
-        volume = run.box_size**3
+        volume = np.prod(run.box_size)
         sfr = run.sfr_data.sfr.to_value("Msun/yr")
         z = run.sfr_data.z
         max = np.max(z)
