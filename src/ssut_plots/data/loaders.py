@@ -135,7 +135,10 @@ def load_camels_run(
     snapshots = sorted(glob(f"{path}/snapshot_*.hdf5"))
     if subfind:
         numbers = [snap[-8:-5] for snap in snapshots]
-        subfinds = [yt.load(f"{path}/fof_subhalo_tab_{num}.hdf5", hint="GadgetFOF") for num in numbers]
+        subfinds = [
+            yt.load(f"{path}/fof_subhalo_tab_{num}.hdf5", hint="GadgetFOF")
+            for num in numbers
+        ]
     else:
         subfinds = [None] * len(snapshots)
 

@@ -32,6 +32,7 @@ def filter_zero(f):
 
     return filtered
 
+
 def filter_nan(f):
     def filtered(self, x: ArrayLike) -> ArrayLike:
         x = np.array(x)
@@ -44,6 +45,7 @@ def filter_nan(f):
         return result
 
     return filtered
+
 
 def filter_neg(f):
     def filtered(self, x: ArrayLike) -> ArrayLike:
@@ -143,7 +145,7 @@ class Cosmo(Axes):
         **kwargs,
     ) -> list[Line2D]:
         if isinstance(x, u.unyt_array):
-            x = x.to_value("Gyr") # type: ignore we just checked this is a unyt_array, not a float
+            x = x.to_value("Gyr")  # type: ignore we just checked this is a unyt_array, not a float
 
         return super().plot(
             x, y, fmt, scalex=scalex, scaley=scaley, data=data, **kwargs

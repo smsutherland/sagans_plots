@@ -23,12 +23,14 @@ class SfrPlot(Cosmo):
         if run.sfr_data is None:
             raise ValueError("Run has no sfr data")
         volume = np.prod(run.box_size)
-        sfr: u.unyt_array = run.sfr_data.sfr.to_value("Msun/yr") # type: ignore
+        sfr: u.unyt_array = run.sfr_data.sfr.to_value("Msun/yr")  # type: ignore
         z = run.sfr_data.z
         max = np.max(z)
         min = np.min(z)
         z_plot = np.linspace(max, min, resolution)
-        sfr_plot = np.interp(z_plot, z[::-1], sfr[::-1]) # interp requires input to be increasing, but z counts backwards
+        sfr_plot = np.interp(
+            z_plot, z[::-1], sfr[::-1]
+        )  # interp requires input to be increasing, but z counts backwards
         sfr_dens = sfr_plot / volume
 
         match self._primary_axis:

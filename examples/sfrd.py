@@ -4,7 +4,9 @@ import matplotlib.pyplot as plt
 
 from ssut_plots.types import OneP
 
-data = load_swimba_run("/mnt/ceph/users/ssutherland/SWIMBA/final_stretch/post_final/new_master/18.sf_norm_more_supp_no_ent_floor/")
+data = load_swimba_run(
+    "/mnt/ceph/users/ssutherland/SWIMBA/final_stretch/post_final/new_master/18.sf_norm_more_supp_no_ent_floor/"
+)
 data2 = load_camels_run("SIMBA", OneP(1, 0))
 
 fig = plt.figure()
