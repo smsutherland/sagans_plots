@@ -17,8 +17,8 @@ ax: SfrPlot = fig.add_subplot(  # type: ignore type checkers think this always r
     ),
 )
 
-ax.plot_sfrd(data)
-ax.plot_sfrd(data2)
+ax.plot_sfrd(data, color="r")
+ax.plot_sfrd(data2, color="g")
 ax.set_ylim(3.1e-3, None)
 
-fig.savefig("a.pdf")
+fig.savefig("sfrd.pdf")

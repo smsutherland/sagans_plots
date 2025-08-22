@@ -19,7 +19,7 @@ class SfrPlot(Cosmo):
             r"Star Formation Density $\left[\mathrm{ M_\odot \, yr^{-1} \, Mpc^3 }\right]$"
         )
 
-    def plot_sfrd(self, run: Run, resolution: int = 10_000):
+    def plot_sfrd(self, run: Run, resolution: int = 10_000, **kwargs):
         if run.sfr_data is None:
             raise ValueError("Run has no sfr data")
         volume = np.prod(run.box_size)
@@ -43,7 +43,7 @@ class SfrPlot(Cosmo):
             case "a":
                 x = 1 / (z_plot + 1)
 
-        self.plot(x, sfr_dens)
+        self.plot(x, sfr_dens, **kwargs)
         self.set_yscale("log")
         self.set_xlim(0, 7)
         self.set_ylim(1e-3, 1e-1)
