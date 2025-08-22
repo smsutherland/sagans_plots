@@ -110,20 +110,19 @@ class Cosmo(Axes):
 
     def plot(
         self,
-        *args: float | ArrayLike | str,
+        x: float | ArrayLike,
+        y: float | ArrayLike,
+        fmt: str = "",
         scalex: bool = True,
         scaley: bool = True,
         data=None,
         **kwargs,
     ) -> list[Line2D]:
-        args_list = list(args)
-        for i in range(len(args_list)):
-            arg = args_list[i]
-            if isinstance(arg, u.unyt_array):
-                args_list[i] = arg.to_value("Gyr")
+        if isinstance(x, u.unyt_array):
+            x = x.to_value("Gyr") # type: ignore we just checked this is a unyt_array, not a float
 
         return super().plot(
-            *args_list, scalex=scalex, scaley=scaley, data=data, **kwargs
+            x, y, fmt, scalex=scalex, scaley=scaley, data=data, **kwargs
         )
 
     @filter_empty
