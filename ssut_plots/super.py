@@ -166,7 +166,7 @@ def plot_halo_temp(ax: Axes, snap: StrPath, **kwargs) -> Axes:
 
 def plot_galaxy_radius(ax: Axes, fof: StrPath, **kwargs):
     with h5py.File(fof) as f:
-        radii = f["Subhalo/SubhaloHalfmassRad"][:]  # kpc / h
+        radii = f["Subhalo/SubhaloHalfmassRadType"][:, 4]  # kpc / h
         mass = f["Subhalo/SubhaloMassType"][:, 4] * 1e10  # Msun / h
 
     bins = np.geomspace(1e9, 5e11, nbins + 1)  # Msun / h
@@ -445,6 +445,7 @@ def mk_plot(
             xscale="log",
             xlabel=r"$\mathrm{M}_*$ $\left[\mathrm{h^{-1}\,M_\odot}\right]$",
             ylabel=r"max($\sqrt{\mathrm{GM/R}}$) $\left[\mathrm{km\,s^{-1}}\right]$",
+            ylim=(0, 400),
         )
         for sim, kwargs in sims:
             plot_v_circ(ax, sim.subfind, **kwargs)
