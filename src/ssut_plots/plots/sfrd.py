@@ -1,6 +1,7 @@
 import typing as T
 
 import numpy as np
+import unyt as u
 from matplotlib.projections import register_projection
 from yt.utilities.cosmology import Cosmology
 
@@ -18,11 +19,11 @@ class SfrPlot(Cosmo):
             r"Star Formation Density $\left[\mathrm{ M_\odot \, yr^{-1} \, Mpc^3 }\right]$"
         )
 
-    def plot_sfrd(self, run: Run, resolution: int = 500):
+    def plot_sfrd(self, run: Run, resolution: int = 10_000):
         if run.sfr_data is None:
             raise ValueError("Run has no sfr data")
         volume = np.prod(run.box_size)
-        sfr = run.sfr_data.sfr.to_value("Msun/yr")
+        sfr: u.unyt_array = run.sfr_data.sfr.to_value("Msun/yr") # type: ignore
         z = run.sfr_data.z
         max = np.max(z)
         min = np.min(z)
@@ -41,6 +42,9 @@ class SfrPlot(Cosmo):
                 x = 1 / (z_plot + 1)
 
         self.plot(x, sfr_dens)
+        self.set_yscale("log")
+        self.set_xlim(0, 7)
+        self.set_ylim(1e-3, 1e-1)
 
 
 class SfrdProjection:
