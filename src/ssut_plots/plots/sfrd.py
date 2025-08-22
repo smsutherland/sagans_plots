@@ -27,7 +27,7 @@ class SfrPlot(Cosmo):
         max = np.max(z)
         min = np.min(z)
         z_plot = np.linspace(max, min, resolution)
-        sfr_plot = np.interp(z_plot, z, sfr)
+        sfr_plot = np.interp(z_plot, z[::-1], sfr[::-1]) # interp requires input to be increasing, but z counts backwards
         sfr_dens = sfr_plot / volume
 
         match self._primary_axis:

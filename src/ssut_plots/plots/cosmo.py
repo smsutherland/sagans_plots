@@ -32,6 +32,27 @@ def filter_zero(f):
 
     return filtered
 
+def filter_nan(f):
+    def filtered(self, x: ArrayLike) -> ArrayLike:
+        x = np.array(x)
+        nans = np.isnan(x)
+        non_nan = x[~nans]
+        f_x = f(self, non_nan)
+        result = np.zeros_like(f_x, shape=x.shape)
+        result[nans] = np.nan
+        result[~nans] = f_x
+        return result
+
+    return filtered
+
+def filter_neg(f):
+    def filtered(self, x: ArrayLike) -> ArrayLike:
+        x = np.array(x)
+        x[x < 0] = np.nan
+        return f(self, x)
+
+    return filtered
+
 
 class Cosmo(Axes):
     name = "cosmo"
@@ -55,11 +76,14 @@ class Cosmo(Axes):
         match self._primary_axis:
             case "t":
                 self.set_xlabel("Cosmic Time [Gyr]")
+                self.set_xlim(0, None)
             case "-t":
                 self.set_xlabel("Lookback Time [Gyr]")
             case "z":
+                self.set_xlim(0, None)
                 self.set_xlabel("Redshift")
             case "a":
+                self.set_xlim(0, None)
                 self.set_xlabel("Scale-Factor")
 
         # There's definitely some weird liveness issues with some of these being lambdas and some not.
@@ -134,16 +158,20 @@ class Cosmo(Axes):
         total_age = self._cosmology.t_from_z(0).to_value("Gyr")
         return total_age - lt
 
+    @filter_nan
+    @filter_neg
     @filter_empty
     def _t_from_z(self, z: ArrayLike) -> ArrayLike:
         return self._cosmology.t_from_z(z).to_value("Gyr")
 
+    @filter_nan
+    @filter_neg
     @filter_empty
     def _t_from_a(self, a: ArrayLike) -> ArrayLike:
         return self._cosmology.t_from_a(a).to_value("Gyr")
 
-    @filter_empty
     @filter_zero
+    @filter_empty
     def _lt_from_t(self, t: ArrayLike) -> ArrayLike:
         total_age = self._cosmology.t_from_z(0).to_value("Gyr")
         return total_age - t
@@ -152,19 +180,24 @@ class Cosmo(Axes):
     def _lt_from_lt(self, lt: ArrayLike) -> ArrayLike:
         return lt
 
+    @filter_nan
+    @filter_neg
     @filter_empty
     def _lt_from_z(self, z: ArrayLike) -> ArrayLike:
         total_age = self._cosmology.t_from_z(0).to_value("Gyr")
         return total_age - self._t_from_z(z)
 
-    @filter_empty
     @filter_zero
+    @filter_nan
+    @filter_neg
+    @filter_empty
     def _lt_from_a(self, a: ArrayLike) -> ArrayLike:
         total_age = self._cosmology.t_from_z(0).to_value("Gyr")
         return total_age - self._t_from_a(a)
 
-    @filter_empty
     @filter_zero
+    @filter_neg
+    @filter_empty
     def _z_from_t(self, t: ArrayLike) -> ArrayLike:
         t = np.array(t)
         return self._cosmology.z_from_t(t * GyrToS)
@@ -177,14 +210,15 @@ class Cosmo(Axes):
     def _z_from_z(self, z: ArrayLike) -> ArrayLike:
         return z
 
-    @filter_empty
     @filter_zero
+    @filter_empty
     def _z_from_a(self, a: ArrayLike) -> ArrayLike:
         a = np.array(a)
         return 1 / a - 1
 
-    @filter_empty
     @filter_zero
+    @filter_neg
+    @filter_empty
     def _a_from_t(self, t: ArrayLike) -> ArrayLike:
         t = np.array(t)
         return self._cosmology.a_from_t(t * GyrToS)
