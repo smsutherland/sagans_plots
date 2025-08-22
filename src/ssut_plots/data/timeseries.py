@@ -17,10 +17,12 @@ class Timeseries:
     @T.overload
     def __init__(self, *snapshots: Snapshot) -> None: ...
     def __init__(self, *snapshots) -> None:
-        if isinstance(snapshots, Snapshot):
-            self.snapshots_list = [snapshots]
-        else:
-            self.snapshots_list = list(snapshots)
+        self.snapshots_list = []
+        for snap in snapshots:
+            if isinstance(snap, Snapshot):
+                self.snapshots_list.append(snap)
+            else:
+                self.snapshots_list.extend(snap)
         if len(self.snapshots_list) == 0:
             raise ValueError("Cannot create a Timeseries of 0 snapshots")
         self.cosmology = self.snapshots_list[0].snap.cosmology
