@@ -177,11 +177,11 @@ def plot_galaxy_radius(ax: Axes, fof: StrPath, **kwargs):
 
 def plot_BH_mass(ax: Axes, fof: StrPath, **kwargs):
     with h5py.File(fof) as f:
-        bh_mass = f["Subhalo/SubhaloMassType"][:, 5] * 1e10  # Msun / h
+        bh_mass = f["Subhalo/SubhaloBHMass"][:] * 1e10  # Msun / h
         stellar_mass = f["Subhalo/SubhaloMassType"][:, 4] * 1e10  # Msun / h
 
     bins = np.geomspace(1e9, 5e11, nbins + 1)  # Msun / h
-    means, edges, _ = scipy.stats.binned_statistic(stellar_mass, bh_mass, "mean", bins)
+    means, edges, _ = scipy.stats.binned_statistic(stellar_mass, bh_mass, "median", bins)
     xs = (edges[1:] + edges[:-1]) / 2
     ax.plot(xs, means, **kwargs)
 
