@@ -46,7 +46,7 @@ class Timeseries:
 
             raise ValueError(error_str)
 
-        self.redshift_list = redshift_list  # type: ignore We've checked above that there are no `None`s left
+        self.redshift_list = np.array(redshift_list)
 
     def get_redshift(self, redshift: float) -> Snapshot:
         index = np.abs(self.redshift_list - redshift).argmin()
