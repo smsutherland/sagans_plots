@@ -13,6 +13,7 @@ class Snapshot:
     ) -> None:
         self.snap = snap
         self.subfind = subfind
+        self.fix_subfind()
 
     def with_subfind(self, fname: str | Path, force: bool = False):
         if self.subfind is not None and not force:
@@ -24,3 +25,16 @@ class Snapshot:
             fname,
             hint="GadgetFOF",
         )
+        self.fix_subfind()
+
+    def fix_subfind(self):
+        """
+        YT adds ".%(num)i" to the filename template so it can turn `fof_subhalo_tab_090.hdf5` to `fof_subhalo_tab_090.0.hdf5`.
+        This is not necessary for our purposes, so we take it out.
+        This could maybe turn into a PR to YT.
+        """
+        if self.subfind is None:
+            return
+        if ".%(num)i" not in self.subfind.filename_template:
+            return
+        self.subfind.filename_template = "".join(self.subfind.filename_template.split(".%(num)i"))
