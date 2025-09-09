@@ -3,6 +3,7 @@ from glob import glob
 from pathlib import Path
 
 import yt
+import yt.loaders
 
 from ssut_plots.types import (
     CV,
@@ -51,9 +52,15 @@ def load_snapshot(
         case "SWIFT":
             hint = "SWIFT"
 
-    snap = yt.load(fname, hint=hint)  # type: ignore yt.load DOES exist please trust me
+    snap = yt.loaders.load(fname, hint=hint)
     if subfind is not None:
-        fof = yt.load(subfind, hint="GadgetFOF")  # type: ignore yt.load DOES exist please trust me
+        fof = yt.loaders.load(
+            subfind,
+            hint="GadgetFOF",
+            unit_base={
+                "length": (1, "kpccm/h"),
+            },
+        )
     else:
         fof = None
 
@@ -170,21 +177,11 @@ def load_camels(
         If True, load the corresponding subfind catalog for the snapshot.
     """
     path = _camels_path(simulation, run, volume)
+    allowed_numbers = _allowed_snapshot_numbers(simulation)
     match simulation:
-        case "SIMBA" | "IllustrisTNG":
-            # fmt:off
-            allowed_numbers = [
-                14, 18, 24, 28, 32, 34, 36, 38, 40,
-                42, 44, 46, 48, 50, 52, 54, 56, 58,
-                60, 62, 64, 66, 68, 70, 72, 74, 76,
-                78, 80, 82, 84, 86, 88, 90,
-            ]
-            hint = "Gizmo"
-        case "Astrid":
-            allowed_numbers = range(0, 91, 2)
+        case "SIMBA" | "IllustrisTNG" | "Astrid":
             hint = "Gizmo"
         case "Swift-EAGLE":
-            allowed_numbers = range(0, 91)
             hint = "SWIFT"
     if number not in allowed_numbers:
         raise ValueError(
@@ -192,9 +189,15 @@ def load_camels(
         )
     path /= f"snapshot_{number:03}.hdf5"
 
-    snap = yt.load(path, hint=hint)  # type: ignore yt.load DOES exist please trust me
+    snap = yt.loaders.load(path, hint=hint)
     if subfind:
-        fof = yt.load(path.parent / f"groups_{number:03}.hdf5", hint="GadgetFOF")  # type: ignore yt.load DOES exist please trust me
+        fof = yt.loaders.load(
+            path.parent / f"groups_{number:03}.hdf5",
+            hint="GadgetFOF",
+            unit_base={
+                "length": (1, "kpccm/h"),
+            },
+        )
     else:
         fof = None
     return Snapshot(snap, fof)
@@ -205,17 +208,17 @@ def load_camels_run(
     run: OneP | CV | LH,
     volume: Volume = 25,
     subfind: bool = False,
+    snapshots: int | T.Iterable[int] | T.Literal["all"] = "all",
 ) -> Run:
     path = _camels_path(simulation, run, volume)
-    snapshots = sorted(glob(f"{path}/snapshot_*.hdf5"))
-    if subfind:
-        numbers = [snap[-8:-5] for snap in snapshots]
-        subfinds = [
-            yt.load(f"{path}/fof_subhalo_tab_{num}.hdf5", hint="GadgetFOF")
-            for num in numbers
-        ]
+
+    if snapshots == "all":
+        numbers = _allowed_snapshot_numbers(simulation)
+    elif isinstance(snapshots, int):
+        numbers = [snapshots]
     else:
-        subfinds = [None] * len(snapshots)
+        numbers = snapshots
+    numbers = sorted(numbers)
 
     match simulation:
         case "SIMBA" | "IllustrisTNG" | "Astrid":
@@ -223,13 +226,24 @@ def load_camels_run(
         case "Swift-EAGLE":
             hint = "SWIFT"
 
-    snaps = [
-        Snapshot(
-            yt.load(snapshot, hint=hint),  # type: ignore yt.load DOES exist please trust me
-            fof,
+    snapshot_ds = (
+        yt.loaders.load(f"{path}/snapshot_{n:03d}.hdf5", hint=hint) for n in numbers
+    )
+    if subfind:
+        subfind_ds = (
+            yt.loaders.load(
+                f"{path}/groups_{n:03d}.hdf5",
+                hint="GadgetFOF",
+                unit_base={
+                    "length": (1, "kpccm/h"),
+                },
+            )
+            for n in numbers
         )
-        for snapshot, fof in zip(snapshots, subfinds)
-    ]
+    else:
+        subfind_ds = (None for _ in numbers)
+
+    snaps = [Snapshot(snapshot, fof) for snapshot, fof in zip(snapshot_ds, subfind_ds)]
     timeseries = Timeseries(snaps)
 
     match simulation:
@@ -243,26 +257,63 @@ def load_camels_run(
     return Run(timeseries, sfr)
 
 
-def load_swimba_run(path: str | Path, subfind: bool = False) -> Run:
+def load_swimba_run(
+    path: str | Path,
+    subfind: bool = False,
+    snapshots: int | T.Iterable[int] | T.Literal["all"] = "all",
+) -> Run:
     path = Path(path)
-    snapshots = sorted(glob(f"{path}/snaps/snapshot_*.hdf5"))
-    subfind_catalogs = [None] * len(snapshots)
+
+    if snapshots == "all":
+        numbers = range(0, 91)
+    elif isinstance(snapshots, int):
+        numbers = [snapshots]
+    else:
+        numbers = snapshots
+    numbers = sorted(numbers)
+
+    snapshot_ds = (
+        yt.loaders.load(f"{path}/snaps/snapshot_{n:04d}.hdf5", hint="SWIFT")
+        for n in numbers
+    )
     if subfind:
-        subfinds = glob(f"{path}/snaps/subs/fof_subhalo_tab_*.hdf5")
-        snap_numbers = [snap[-8:-5] for snap in snapshots]
-        subfind_numbers = [fof[-8:-5] for fof in subfinds]
-        for i, num in enumerate(subfind_numbers):
-            try:
-                index = snap_numbers.index(num)
-            except ValueError:
-                continue
-            catalog = yt.load(subfinds[i], hint="GadgetFOF")  # type: ignore yt.load DOES exist please trust me
-            subfind_catalogs[index] = catalog
+        subfind_ds = (
+            yt.loaders.load(
+                fname,
+                hint="GadgetFOF",
+                unit_base={
+                    "length": (1, "kpccm/h"),
+                },
+            )
+            if (fname := path / f"snaps/subs/fof_subhalo_tab_{n:03d}.hdf5").exists()
+            else None
+            for n in numbers
+        )
+    else:
+        subfind_ds = (None for _ in numbers)
+
     timeseries = Timeseries(
         Snapshot(
-            yt.load(snap, hint="SWIFT"),  # type: ignore yt.load DOES exist please trust me
+            snap,
             fof,
         )
-        for snap, fof in zip(snapshots, subfind_catalogs)
+        for snap, fof in zip(snapshot_ds, subfind_ds)
     )
     return Run(timeseries, SFRData(path / "SFR.txt", hint="SWIFT"))
+
+
+def _allowed_snapshot_numbers(simulation: CamelsSimulationType) -> T.Iterable[int]:
+    match simulation:
+        case "SIMBA" | "IllustrisTNG":
+            # fmt:off
+            allowed =  [
+                14, 18, 24, 28, 32, 34, 36, 38, 40,
+                42, 44, 46, 48, 50, 52, 54, 56, 58,
+                60, 62, 64, 66, 68, 70, 72, 74, 76,
+                78, 80, 82, 84, 86, 88, 90,
+            ]
+        case "Astrid":
+            allowed = range(0, 91, 2)
+        case "Swift-EAGLE":
+            allowed = range(0, 91)
+    return allowed
