@@ -1,18 +1,19 @@
 [project]
 name = "ssut-plots"
-version = "0.1.0"
+version = "0.2.0"
 description = "Add your description here"
 readme = "README.md"
 authors = [
     { name = "Sagan Sutherland", email = "sagan@farthinghalearms.com" }
 ]
-requires-python = ">=3.12"
+requires-python = ">=3.11.6"
 dependencies = [
     "matplotlib>=3.10.3",
     "numpy>=2.3.0",
     "yt>=4.4.0",
     "pandas>=2.3",
     "h5py>=3.11.0",
+    "pylians==0.12",
 ]
 
 [build-system]
