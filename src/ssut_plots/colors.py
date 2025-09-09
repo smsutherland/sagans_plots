@@ -1,0 +1,2 @@
+SWIMBA = "#d20f39"
+SIMBA = "#2094b5"
