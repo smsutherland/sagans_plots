@@ -24,6 +24,25 @@ def load_snapshot(
     subfind: T.Optional[str | Path] = None,
     kind: T.Optional[SimulationType] = None,
 ) -> Snapshot:
+    """
+    Load a snapshot at the given path.
+
+    Parameters
+    ----------
+    fname
+        Path to the snapshot file.
+    subfind
+        If provided, loads the subfind catalog at the specified path alongside the snapshot.
+        This is required for use in some plots, but not all.
+    kind
+        If provided, gives a hint to yt for what kind of snapshot is being loaded.
+
+    Returns
+    -------
+    Snapshot
+        Snapshot that has been loaded.
+        If subfind is provided, the Snapshot will have a loaded subfind catalog as well.
+    """
     match kind:
         case None:
             hint = None
@@ -55,7 +74,29 @@ def load_series(
     expand_glob: T.Literal[True],
     kind: T.Optional[SimulationType] = None,
 ) -> Timeseries: ...
-def load_series(*snapshots, expand_glob, kind=None) -> Timeseries:
+def load_series(*snapshots, expand_glob=False, kind=None) -> Timeseries:
+    """
+    Load a collection of snapshots into a Timeseries.
+    No subfind catalogs will be loaded with the snapshots (for now).
+
+    Parameters
+    ----------
+    *snapshots
+        Arguments of type `str` or Path.
+        Each one will be loaded as a Snapshot and combined into a Timeseries.
+        If expand_glob is True, only one snapshot can be provided, and must be of type `str`.
+    expand_glob
+        If True, interprets the provided string as a glob pattern.
+        If False, the provided strings are taken as paths to the snapshots to be loaded.
+        See documentation for glob.glob for more information.
+    hint
+        If provided, gives a hint to yt for what kind of snapshots are being loaded.
+
+    Returns
+    -------
+    Timeseries
+        Timeseries that has been loaded.
+    """
     if expand_glob:
         assert isinstance(snapshots[0], str)
         snapshot_list = glob(snapshots[0])
@@ -69,6 +110,21 @@ def _camels_path(
     run: OneP | CV | LH,
     volume: Volume,
 ) -> Path:
+    """
+    Resolve the path for a CAMELS simulation.
+
+    Parameters
+    ----------
+    simulation
+        Which simulation kind.
+        Allowed values: 'SIMBA', 'Swift-EAGLE', 'IllustrisTNG', 'Astrid'
+    run
+        Which series of runs.
+        Allowed values: `OneP`, `CV`, `LH`
+    volume
+        What size run.
+        Allowed values: 25, 50
+    """
     path = Path("/mnt/ceph/users/camels/PUBLIC_RELEASE/Sims")
     path /= simulation
     match volume:
@@ -93,7 +149,26 @@ def load_camels(
     number: int,
     volume: Volume = 25,
     subfind: bool = False,
-):
+) -> Snapshot:
+    """
+    Load a snapshot from CAMELS.
+
+    Parameters
+    ----------
+    simulation
+        Which simulation kind.
+        Allowed values: 'SIMBA', 'Swift-EAGLE', 'IllustrisTNG', 'Astrid'
+    run
+        Which series of runs.
+        Allowed values: `OneP`, `CV`, `LH`
+    number
+        Which snapshot number to load.
+    volume
+        What size run.
+        Allowed values: 25, 50
+    subfind
+        If True, load the corresponding subfind catalog for the snapshot.
+    """
     path = _camels_path(simulation, run, volume)
     match simulation:
         case "SIMBA" | "IllustrisTNG":
