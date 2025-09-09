@@ -1,7 +1,9 @@
 import typing as T
 import warnings
+from functools import cached_property
 from pathlib import Path
 
+import numpy as np
 import yt
 from yt.data_objects.static_output import Dataset
 from yt.frontends.gadget_fof.data_structures import GadgetFOFDataset
@@ -24,6 +26,9 @@ class Snapshot:
         self.subfind = yt.load(  # type: ignore yt.load DOES exist please trust me
             fname,
             hint="GadgetFOF",
+            unit_base={
+                "length": (1, "kpccm/h"),
+            },
         )
         self.fix_subfind()
 
@@ -37,4 +42,16 @@ class Snapshot:
             return
         if ".%(num)i" not in self.subfind.filename_template:
             return
-        self.subfind.filename_template = "".join(self.subfind.filename_template.split(".%(num)i"))
+        self.subfind.filename_template = "".join(
+            self.subfind.filename_template.split(".%(num)i")
+        )
+
+    @cached_property
+    def omega_b(self) -> float:
+        ad = self.snap.all_data()
+        baryon_mass = 0
+        for i in (0, 4, 5):
+            baryon_mass += np.sum(ad[f"PartType{i}", "particle_mass"]).to_value("Msun")
+        dm_mass = np.sum(ad["PartType1", "particle_mass"]).to_value("Msun")
+
+        return baryon_mass / (baryon_mass + dm_mass) * self.snap.cosmology.omega_matter
